@@ -29,13 +29,13 @@ class ProductProduct(orm.Model):
     _columns = {
         'display_for_product_ids': fields.many2many(
             'product.product',
-            'product_template_option_rel',
+            'product_display_variant_rel',
             'product_display_id',
             'product_id',
             string='Products'),
         'display_ids': fields.many2many(
             'product.product',
-            'product_template_option_rel',
+            'product_display_variant_rel',
             'product_id',
             'product_display_id',
             string='Products Display'),
