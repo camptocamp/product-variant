@@ -241,7 +241,8 @@ class ProductTemplate(orm.Model):
             if product_tmpl.attribute_set_id:
                 for group in product_tmpl.attribute_set_id.attribute_group_ids:
                     for attr in group.attribute_ids:
-                        attr_ids.append(attr.attribute_id.id)
+                        if attr.attribute_id.is_dimension:
+                            attr_ids.append(attr.attribute_id.id)
                 result[product_tmpl.id] = attr_ids
         return result
 
@@ -532,6 +533,8 @@ class ProductProduct(orm.Model):
         return super(ProductProduct, self).unlink(cr, uid, ids, context)
 
     def update_variant(self, cr, uid, ids, context=None):
+        if context is None:
+            context = {}
         lang_obj = self.pool.get('res.lang')
         lang_ids = lang_obj.search(cr, uid, [
             ('translatable', '=', True),
