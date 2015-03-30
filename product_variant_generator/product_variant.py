@@ -332,6 +332,8 @@ class ProductTemplate(orm.Model):
         return True
 
     def get_products_from_product_template(self, cr, uid, ids, context=None):
+        if not isinstance(ids, (tuple, list)):
+            ids = [ids]
         product_tmpl = self.read(cr, uid, ids, ['variant_ids'], context=context)
         return [id for vals in product_tmpl for id in vals['variant_ids']]
 
@@ -429,7 +431,6 @@ class ProductTemplate(orm.Model):
 
         combinaisons_to_create = [x for x in combinaisons
                                   if not x in existing_combinaisons]
-
         _logger.debug("variant existing : %s, variant to create : %s",
                       len(existing_combinaisons),
                       len(combinaisons_to_create))
@@ -452,39 +453,33 @@ class ProductTemplate(orm.Model):
 
     def _create_variant(self, cr, uid, product_temp, existing_product_ids,
                         context=None):
-        variants_obj = self.pool['product.product']
-        created_product_ids = []
         combinaisons_to_create = self.\
             _get_combinaisons_to_create(
                 cr, uid, product_temp, existing_product_ids,
                 context=context)
-
         count = 0
+        list_vals = []
         for combinaison in combinaisons_to_create:
             count += 1
-            vals = self._prepare_variant_vals(
+            list_vals.append(self._prepare_variant_vals(
                 cr, uid, product_temp, combinaison,
-                context=context)
-
-            cr.execute("SAVEPOINT pre_variant_save")
-            try:
-                product_id = variants_obj.create(cr, uid, vals, {
-                    'generate_from_template': True,
-                    })
-                created_product_ids.append(product_id)
-                if count % 50 == 0:
-                    _logger.debug("product created : %s", count)
-            except Exception, e:
-                if config['debug_mode']:
-                    raise
-                _logger.error("Error creating product variant: %s",
-                              e, exc_info=True)
-                _logger.debug("Values used to attempt creation of "
-                              "product variant: %s", vals)
-                cr.execute("ROLLBACK TO SAVEPOINT pre_variant_save")
-            cr.execute("RELEASE SAVEPOINT pre_variant_save")
+                context=context))
+        start = datetime.datetime.now()
+        created_product_ids = self._insert_variant(
+            cr, uid, list_vals, context=context)
+        done = datetime.datetime.now()
 
         _logger.debug("product created : %s", len(created_product_ids))
+        return created_product_ids
+
+    def _insert_variant(self, cr, uid, list_vals, context=None):
+        variants_obj = self.pool['product.product']
+        created_product_ids = []
+        for vals in list_vals:
+            ctx = context.copy()
+            ctx['generate_from_template'] = True
+            product_id = variants_obj.create(cr, uid, vals, ctx)
+            created_product_ids.append(product_id)
         return created_product_ids
 
     def _generate_variant_for_template(self, cr, uid, product_temp,
@@ -497,14 +492,15 @@ class ProductTemplate(orm.Model):
             ], context=context)
 
         if not product_temp.do_not_generate_new_variant:
+            _logger.debug("Start to create new variant...")
             created_product_ids = self._create_variant(
                 cr, uid, product_temp, existing_product_ids,
                 context=context)
-
         product_ids = existing_product_ids + created_product_ids
 
         _logger.debug("Starting to generate/update variant names...")
         variants_obj.update_variant(cr, uid, product_ids, context=context)
+        _logger.debug("Finish to generate/update variant names...")
         return True
 
     def button_generate_variants(self, cr, uid, ids, context=None):
@@ -516,15 +512,6 @@ class ProductTemplate(orm.Model):
 
 class ProductProduct(orm.Model):
     _inherit = "product.product"
-
-    def init(self, cr):
-        #TODO do it only for the first installation
-        #For the first installation if you already have product in
-        # your database, the name of the existing product will be empty,
-        # so we fill it
-        cr.execute("UPDATE product_product SET name=name_template "
-                   "WHERE name is null;")
-        return True
 
     def unlink(self, cr, uid, ids, context=None):
         if not context:
@@ -574,11 +561,6 @@ class ProductProduct(orm.Model):
         return vals_to_write
 
     _columns = {
-        'name': fields.char(
-            'Name',
-            size=128,
-            translate=True,
-            select=True),
         'variants': fields.char(
             'Variants',
             size=128),

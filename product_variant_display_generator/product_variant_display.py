@@ -59,7 +59,8 @@ class ProductTemplate(orm.Model):
 
     def _get_combinaison(self, cr, uid, product_temp, context=None):
         if context.get('product_display'):
-            fields = [dim.name for dim in product_temp.dimension_ids]
+            fields = set([dimension_value.dimension_id.name
+                      for dimension_value in product_temp.value_ids])
             num_of_fields = len(fields)
             combinaisons = []
             if product_temp.main_dim_id:
