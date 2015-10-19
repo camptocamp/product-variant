@@ -70,7 +70,7 @@ class DimensionValue(orm.Model):
         for value in self.browse(cr, uid, ids, context=context):
             product_ids = product_obj.search(cr, uid, [
                 ['product_tmpl_id', '=', value.product_tmpl_id.id],
-                [value.dimension_id.name, '=', value.option_id.name],
+                [value.dimension_id.name, '=', value.option_id.id],
                 ], context=context)
             if product_ids:
                 products = product_obj.browse(cr, uid, product_ids,
