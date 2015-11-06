@@ -486,10 +486,11 @@ class ProductTemplate(orm.Model):
                                        context=None):
         variants_obj = self.pool['product.product']
         created_product_ids = []
-
+        ctx = context.copy()
+        ctx['active_test'] = False
         existing_product_ids = variants_obj.search(cr, uid, [
             ('product_tmpl_id', '=', product_temp.id)
-            ], context=context)
+            ], context=ctx)
 
         if not product_temp.do_not_generate_new_variant:
             _logger.debug("Start to create new variant...")
