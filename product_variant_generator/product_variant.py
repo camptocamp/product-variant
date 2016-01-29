@@ -356,18 +356,6 @@ class ProductTemplate(orm.Model):
 
         return new_id
 
-    def copy_translations(self, cr, uid, old_id, new_id, context=None):
-        if context is None:
-            context = {}
-        # avoid recursion through already copied records in case
-        # of circular relationship
-        seen_map = context.setdefault('__copy_translations_seen', {})
-        if old_id in seen_map.setdefault(self._name, []):
-            return
-        seen_map[self._name].append(old_id)
-        return super(ProductTemplate, self).\
-            copy_translations(cr, uid, old_id, new_id, context=context)
-
     def _create_variant_list(self, cr, uid, vals, context=None):
 
         def cartesian_product(args):
