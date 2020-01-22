@@ -11,10 +11,6 @@ class SaleOrderLine(models.Model):
     def _compute_tax_id(self):
         super()._compute_tax_id()
         for line in self:
-            line.tax_id = [
-                (
-                    6,
-                    0,
-                    line.tax_id.ids + line.product_id.additional_tax_ids.ids,
-                )
-            ]
+            new_taxes = line.tax_id | line.product_id.additional_tax_ids
+            if new_taxes != line.tax_id:
+                line.tax_id = new_taxes
