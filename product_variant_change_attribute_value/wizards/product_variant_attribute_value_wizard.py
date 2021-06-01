@@ -9,7 +9,7 @@ class VariantAttributeValueWizard(models.TransientModel):
     _description = "Wizard to change attriubtes on product variants"
 
     product_ids = fields.Many2many(
-        "product.product", default=lambda self: self._default_product_id()
+        "product.product", default=lambda self: self._default_product_ids()
     )
 
     attributes_action_ids = fields.Many2many(
@@ -18,11 +18,11 @@ class VariantAttributeValueWizard(models.TransientModel):
         default=lambda self: self._default_attributes_action_ids(),
     )
 
-    def _default_product_id(self):
+    def _default_product_ids(self):
         return self.env["product.product"].browse(self._context.get("default_res_ids"))
 
     def _default_attributes_action_ids(self):
-        p = self.env["product.product"].browse(self._context.get("default_res_ids"))
+        p = self._default_product_ids()
         links = p.product_template_attribute_value_ids
         attribute_ids = links.product_attribute_value_id
         return [
@@ -43,7 +43,7 @@ class VariantAttributeValueWizard(models.TransientModel):
             self.update_variant_value(product)
 
     def _is_attribute_value_being_used(self, variant_id, attribute_value):
-        """Check if attribute value is still in used on any variant of a template."""
+        """Check if attribute value is still used by a variant."""
         existing_variants = self.env["product.product"].search(
             [
                 ("id", "!=", variant_id.id),
@@ -70,7 +70,7 @@ class VariantAttributeValueWizard(models.TransientModel):
             pav = value_action.product_attribute_value_id
             if pav not in pav_ids:
                 continue
-            pav_replacement = value_action.replaced_by
+            pav_replacement = value_action.replaced_by_id
             if action == "replace" and not pav_replacement:
                 continue
             elif action == "delete":

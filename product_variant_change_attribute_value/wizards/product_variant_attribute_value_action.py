@@ -22,7 +22,7 @@ class ProductVariantAttributeValueAction(models.TransientModel):
     selectable_attribute_value_ids = fields.Many2many(
         "product.attribute.value", compute="_compute_selectable_attribute_value_ids"
     )
-    replaced_by = fields.Many2one(
+    replaced_by_id = fields.Many2one(
         "product.attribute.value",
         string="Replace with",
         domain="[('id', 'in', selectable_attribute_value_ids)]",
