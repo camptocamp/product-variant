@@ -1,7 +1,7 @@
 # Copyright 2021 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
-from odoo import fields, models
+from odoo import api, fields, models
 
 
 class VariantAttributeValueWizard(models.TransientModel):
@@ -11,7 +11,8 @@ class VariantAttributeValueWizard(models.TransientModel):
     product_ids = fields.Many2many(
         "product.product", default=lambda self: self._default_product_ids()
     )
-
+    product_variant_count = fields.Integer(compute="_compute_count")
+    product_template_count = fields.Integer(compute="_compute_count")
     attributes_action_ids = fields.Many2many(
         "variant.attribute.value.action",
         relation="variant_attribute_wizard_attribute_action_rel",
@@ -37,6 +38,12 @@ class VariantAttributeValueWizard(models.TransientModel):
             )
             for x in attribute_ids
         ]
+
+    @api.depends("product_ids")
+    def _compute_count(self):
+        for record in self:
+            record.product_variant_count = len(record.product_ids)
+            record.product_template_count = len(record.product_ids.mapped("product_tmpl_id"))
 
     def action_change_attributes(self):
         for product in self.product_ids:
