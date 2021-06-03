@@ -14,7 +14,7 @@ class VariantAttributeValueWizard(models.TransientModel):
 
     attributes_action_ids = fields.Many2many(
         "variant.attribute.value.action",
-        relation="rrhha_rel",
+        relation="variant_attribute_wizard_attribute_action_rel",
         default=lambda self: self._default_attributes_action_ids(),
     )
 
