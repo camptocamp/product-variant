@@ -37,6 +37,9 @@ class ProductAttributeValue(models.Model):
     def _archive(self):
         return self.write({"active": False})
 
+    def _unarchive(self):
+        return self.write({"active": True})
+
     def _get_pav_to_archive(self):
         pav_to_archive_ids = set()
         for pav in self:
@@ -56,3 +59,16 @@ class ProductAttributeValue(models.Model):
         if pav_to_archive:
             pav_to_archive._archive()
         return super(ProductAttributeValue, pav_to_unlink).unlink()
+
+    def create(self, values):
+        existing_archived_value = self.search(
+            [
+                ("active", "=", False),
+                ("name", "=", values["name"]),
+                ("attribute_id", "=", values["attribute_id"]),
+            ]
+        )
+        if existing_archived_value:
+            existing_archived_value.active = True
+            return existing_archived_value
+        return super().create(values)
