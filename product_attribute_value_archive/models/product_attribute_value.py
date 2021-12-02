@@ -1,7 +1,7 @@
 # Copyright 2021 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl)
 
-from odoo import fields, models
+from odoo import api, fields, models
 
 
 class ProductAttributeValue(models.Model):
@@ -60,15 +60,22 @@ class ProductAttributeValue(models.Model):
             pav_to_archive._archive()
         return super(ProductAttributeValue, pav_to_unlink).unlink()
 
+    @api.model_create_multi
     def create(self, values):
-        existing_archived_value = self.search(
-            [
-                ("active", "=", False),
-                ("name", "=", values["name"]),
-                ("attribute_id", "=", values["attribute_id"]),
-            ]
-        )
-        if existing_archived_value:
-            existing_archived_value.active = True
-            return existing_archived_value
-        return super().create(values)
+        values_to_create = []
+        unarchived_record_ids = set()
+        for value in values:
+            existing_archived_value = self.search(
+                [
+                    ("active", "=", False),
+                    ("name", "=", value["name"]),
+                    ("attribute_id", "=", value["attribute_id"]),
+                ]
+            )
+            if existing_archived_value:
+                existing_archived_value.active = True
+                unarchived_record_ids.add(existing_archived_value.id)
+                continue
+            values_to_create.append(value)
+        created_records = super().create(values_to_create)
+        return created_records | self.browse(unarchived_record_ids)
