@@ -142,8 +142,9 @@ class TestArchiveAttributeValue(SavepointCase):
         # The red car variant is still active, so we shouldn't be able
         # to archive or unlink the value, and odoo should raise
         # an exception saying that red is still referenced by car
-        regex = r"You cannot delete the value color: {value}.*{product}".format(
-            value=self.red.name, product=self.car.name
+        regex = (
+            f"You cannot delete the value color: {self.red.name} "
+            f"because it is used on the following products:\n{self.car.name}"
         )
         with self.assertRaisesRegex(UserError, regex):
             self.red.unlink()
